@@ -33,8 +33,8 @@ def home():
                     THEN t.amount ELSE 0 END
                 ), 0) AS total_expenses
 
-            FROM Transactions t
-            JOIN Categories c
+            FROM transactions t
+            JOIN categories c
                 ON t.category_id = c.category_id
             WHERE t.user_id = 1
         """)
@@ -44,7 +44,7 @@ def home():
         # Get all categories
         cursor.execute("""
             SELECT category_name, category_id, type
-            FROM Categories
+            FROM categories
             ORDER BY category_name
         """)
 
@@ -56,8 +56,8 @@ def home():
                 c.category_name,
                 SUM(t.amount) AS total
 
-            FROM Transactions t
-            JOIN Categories c
+            FROM transactions t
+            JOIN categories c
                 ON t.category_id = c.category_id
 
             WHERE c.type = 'expense'
@@ -79,8 +79,8 @@ def home():
                 t.transaction_date,
                 t.description
 
-            FROM Transactions t
-            JOIN Categories c
+            FROM transactions t
+            JOIN categories c
                 ON t.category_id = c.category_id
 
             WHERE t.user_id = 1
@@ -154,7 +154,7 @@ def add_transaction():
         # Check whether category matches transaction type
         cursor.execute("""
             SELECT category_id
-            FROM Categories
+            FROM categories
             WHERE category_id = %s
               AND type = %s
         """, (category_id, transaction_type))
@@ -164,7 +164,7 @@ def add_transaction():
 
         # Insert transaction
         cursor.execute("""
-            INSERT INTO Transactions
+            INSERT INTO transactions
             (
                 user_id,
                 category_id,
@@ -221,17 +221,17 @@ def edit_transaction(transaction_id):
             # Check that the transaction exists
             cursor.execute("""
                 SELECT transaction_id
-                FROM Transactions
+                FROM transactions
                 WHERE transaction_id = %s
                   AND user_id = 1
             """, (transaction_id,))
 
             if cursor.fetchone() is None:
-                return "Transaction not found!", 404
+                return "transactions not found!", 404
 
             # Update transaction
             cursor.execute("""
-                UPDATE Transactions
+                UPDATE transactions
                 SET
                     category_id = %s,
                     amount = %s,
@@ -254,7 +254,7 @@ def edit_transaction(transaction_id):
         # Get transaction details
         cursor.execute("""
             SELECT *
-            FROM Transactions
+            FROM transactions
             WHERE transaction_id = %s
               AND user_id = 1
         """, (transaction_id,))
@@ -262,12 +262,12 @@ def edit_transaction(transaction_id):
         transaction = cursor.fetchone()
 
         if transaction is None:
-            return "Transaction not found!", 404
+            return "transactions not found!", 404
 
         # Get categories for edit page
         cursor.execute("""
             SELECT category_id, category_name, type
-            FROM Categories
+            FROM categories
             ORDER BY category_name
         """)
 
@@ -303,14 +303,14 @@ def delete_transaction(transaction_id):
         cursor = connection.cursor()
 
         cursor.execute("""
-            DELETE FROM Transactions
+            DELETE FROM transactions
             WHERE transaction_id = %s
               AND user_id = 1
         """, (transaction_id,))
 
         if cursor.rowcount == 0:
             connection.rollback()
-            return "Transaction not found!", 404
+            return "transactions not found!", 404
 
         connection.commit()
 
