@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker | Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h2>💚 ExpenseTrack</h2>
+
+    <nav>
+        <a class="active" href="/">▦ Dashboard</a>
+        <a href="#transactions">↔ Transactions</a>
+        <a href="#analytics">◉ Analytics</a>
+    </nav>
+
+    <div class="sidebar-bottom">
+        Personal Finance Manager
+    </div>
+</div>
+
+<main class="main-content">
+
+    <header>
+        <div>
+            <h1>Dashboard</h1>
+            <p>Welcome back! Here's your financial overview.</p>
+        </div>
+        <div class="profile">👤 Demo User</div>
+    </header>
+
+    <section class="summary-cards">
+
+        <div class="card income">
+            <p>Total Income</p>
+            <h2>₹{{ "%.2f"|format(summary.total_income) }}</h2>
+            <span>↗ Money received</span>
+        </div>
+
+        <div class="card expense">
+            <p>Total Expenses</p>
+            <h2>₹{{ "%.2f"|format(summary.total_expenses) }}</h2>
+            <span>↘ Money spent</span>
+        </div>
+
+        <div class="card balance">
+            <p>Available Balance</p>
+            <h2>₹{{ "%.2f"|format(balance) }}</h2>
+            <span>✓ Current balance</span>
+        </div>
+
+    </section>
+    
+<section class="panel add-transaction">
+    <h2>Add a Transaction</h2>
+    <p class="subtitle">Record your income or expenses</p>
+
+    <form action="/add-transaction" method="POST">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Transaction Type</label>
+                <select name="type" id="transactionType" required>
+                    <option value="">Select type</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category_id" id="categorySelect" required>
+                    <option value="">Select category</option>
+
+                    {% for category in categories %}
+                    <option value="{{ category.category_id }}"
+                            data-type="{{ category.type }}">
+                        {{ category.category_name }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Amount (₹)</label>
+                <input type="number" name="amount"
+                       placeholder="Enter amount"
+                       min="0.01" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="transaction_date" required>
+            </div>
+
+            <div class="form-group full-width">
+                <label>Description</label>
+                <input type="text" name="description"
+                       placeholder="What was this transaction for?">
+            </div>
+
+        </div>
+
+        <button type="submit" class="add-button">
+            + Save Transaction
+        </button>
+
+    </form>
+</section>
+
+
+    <section class="content-grid" id="analytics">
+
+        <div class="panel chart-panel">
+            <h2>Expenses by Category</h2>
+            <p class="subtitle">Your spending breakdown</p>
+
+            <div class="chart-container">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Financial Summary</h2>
+            <p class="subtitle">Overall account summary</p>
+
+            <div class="summary-row">
+                <span>Total Income</span>
+                <strong class="green">
+                    ₹{{ "%.2f"|format(summary.total_income) }}
+                </strong>
+            </div>
+
+            <div class="summary-row">
+                <span>Total Expenses</span>
+                <strong class="red">
+                    ₹{{ "%.2f"|format(summary.total_expenses) }}
+                </strong>
+            </div>
+
+            <div class="summary-row">
+                <span>Remaining Balance</span>
+                <strong>
+                    ₹{{ "%.2f"|format(balance) }}
+                </strong>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="panel transactions-panel" id="transactions">
+
+        <h2>Recent Transactions</h2>
+        <p class="subtitle">Your latest financial activity</p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.category_name }}</td>
+                        <td>{{ transaction.description or '-' }}</td>
+                        <td>{{ transaction.transaction_date }}</td>
+
+                        <td>
+                            <span class="{{ transaction.type }}">
+                                {{ transaction.type|title }}
+                            </span>
+                        </td>
+
+                        <td class="{% if transaction.type == 'income' %}green{% else %}red{% endif %}">
+                            {% if transaction.type == 'income' %}+{% else %}-{% endif %}
+                            ₹{{ "%.2f"|format(transaction.amount) }}
+                        </td>
+                        <td>
+    <a href="{{ url_for('edit_transaction', transaction_id=transaction.transaction_id) }}">
+        Edit
+    </a>
+
+    <form action="{{ url_for('delete_transaction', transaction_id=transaction.transaction_id) }}"
+          method="POST"
+          style="display:inline;"
+          onsubmit="return confirm('Are you sure you want to delete this transaction?');">
+
+        <button type="submit"
+                style="background:#dc2626; color:white; border:none; padding:7px 12px; border-radius:5px; cursor:pointer;">
+            Delete
+        </button>
+
+    </form>
+</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">No transactions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+    <footer>
+        Expense Tracker · Personal Finance Management System
+    </footer>
+
+</main>
+
+<script>
+    const categories = {{ category_data | tojson }};
+    const labels = categories.map(item => item.category_name);
+    const values = categories.map(item => Number(item.total));
+
+    const ctx = document.getElementById('expenseChart');
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#16a34a',
+                    '#3b82f6',
+                    '#f59e0b',
+                    '#a855f7',
+                    '#ef4444',
+                    '#06b6d4'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>
